@@ -1,0 +1,11 @@
+services:
+  redis:
+    image: redis:alpine
+    container_name: zero-trust-redis
+    ports:
+      - "6379:6379"
+    restart: always
+    volumes:
+      - redis-data:/data
+volumes:
+  redis-data:

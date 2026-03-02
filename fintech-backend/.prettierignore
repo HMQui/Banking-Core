@@ -1,0 +1,17 @@
+# Dependencies
+/node_modules
+/dist
+
+# Build outputs
+/coverage
+/build
+
+# Config files
+eslint.config.mjs
+tsconfig.json
+nest-cli.json
+
+# Other
+.git
+.env
+*.log

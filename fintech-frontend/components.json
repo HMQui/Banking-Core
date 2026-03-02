@@ -1,0 +1,8 @@
+{
+  "$schema": "https://shadcn.dev/schema.json",
+  "style": "default",
+  "rsc": false,
+  "tsx": true,
+  "alias": "@",
+  "baseColor": "zinc"
+}
