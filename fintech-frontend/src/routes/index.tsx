@@ -12,6 +12,7 @@ const AuthPage = lazy(() => import("../pages/AuthPage"));
 const Dashboard = lazy(() => import("../pages/UserTemplate/Dashboard"));
 const Transactions = lazy(() => import("../pages/UserTemplate/Transactions"));
 const Profile = lazy(() => import("../pages/UserTemplate/Profile"));
+const AccountManagement = lazy(() => import("../pages/UserTemplate/AccountManagement"));
 
 const AdminAuth = lazy(() => import("../pages/AuthPage/AdminAuth"));
 const AdminDashboard = lazy(() => import("../pages/AdminTemplate/AdminDashboard"));
@@ -76,6 +77,14 @@ export const router = createBrowserRouter([
                             </SuspenseWrapper>
                         ),
                     },
+                    {
+                        path: "accounts-management",
+                        element: (
+                            <SuspenseWrapper>
+                                <AccountManagement />
+                            </SuspenseWrapper>
+                        ),
+                    }
                 ],
             },
         ],

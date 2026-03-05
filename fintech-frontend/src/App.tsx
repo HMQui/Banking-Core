@@ -10,6 +10,8 @@ import { refreshThunk } from "./store/slices/authSlice";
 import Loading from "./components/Loading";
 import { injectStore } from "./api/axiosClient";
 import "./index.css";
+import { initDPoPKeys } from "./utils/dpop";
+import ToastContainer from "./components/common/Toast/ToastContainer";
 
 injectStore(store);
 
@@ -26,6 +28,7 @@ function AppContent() {
 
     useEffect(() => {
         const initSession = async () => {
+            await initDPoPKeys();
             const refreshToken = localStorage.getItem("refresh_token");
 
             if (!accessToken && refreshToken) {
@@ -55,5 +58,11 @@ function AppContent() {
 }
 
 export default function App() {
-    return <AppContent />;
+    return (
+        <>
+            <AppContent />
+
+            <ToastContainer />
+        </>
+    );
 }

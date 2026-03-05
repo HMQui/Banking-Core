@@ -1,16 +1,15 @@
 import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
-
-const SK = process.env.SECRET_KEY || 'default_secret_key';
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     private readonly logger = new Logger(JwtStrategy.name);
 
-    constructor() {
+    constructor(private readonly configService: ConfigService) {
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([
                 (request: Request) => {
@@ -18,10 +17,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
                         console.log('[JWT] No request object');
                         return null;
                     }
-                    console.log(request.headers);
 
                     const authHeader = request.headers['authorization'];
-                    console.log('[JWT] Authorization Header:', authHeader);
 
                     if (
                         authHeader &&
@@ -38,7 +35,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
                 },
             ]),
             ignoreExpiration: false,
-            secretOrKey: SK,
+            // Ensure ConfigService is used to get the dynamic env variable
+            secretOrKey:
+                configService.get<string>('SECRET_KEY') || 'default_secret_key',
         });
 
         this.logger.log('JwtStrategy initialized');
@@ -46,15 +45,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     validate(payload: JwtPayload) {
         this.logger.log('Validate function called');
-        this.logger.debug(`Payload received: ${JSON.stringify(payload)}`);
 
-        if (!payload.sub) {
-            this.logger.error('Payload missing sub');
-            throw new UnauthorizedException('Invalid token payload structure');
-        }
-
-        if (!payload.cnf) {
-            this.logger.error('Payload missing cnf');
+        // Check for required DPoP and standard JWT claims
+        if (!payload.sub || !payload.cnf) {
+            this.logger.error('Payload missing sub or cnf claim');
             throw new UnauthorizedException('Invalid token payload structure');
         }
 

@@ -23,6 +23,7 @@ import { BeneficiaryResponseDto } from './dto/beneficiary-response.dto';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { DPoPGuard } from '../auth/guards/dpop.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { UpdateAccountDto } from './dto/update-account.dto';
 
 @UseGuards(JwtAuthGuard, DPoPGuard)
 @UseInterceptors(ClassSerializerInterceptor)
@@ -39,8 +40,16 @@ export class AccountsController {
         @CurrentUser('sub') userId: string,
         @Body() createAccountDto: CreateAccountDto,
     ) {
-        // Logics remains the same, but userId is now cleanly injected
         return this.accountsService.createAccount(userId, createAccountDto);
+    }
+
+    @Patch('me')
+    @SerializeOptions({ type: AccountResponseDto })
+    async updateAccount(
+        @CurrentUser('sub') userId: string,
+        @Body() updateAccountDto: UpdateAccountDto,
+    ) {
+        return this.accountsService.updateAccount(updateAccountDto, userId);
     }
 
     @Get('me')

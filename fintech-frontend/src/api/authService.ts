@@ -18,8 +18,8 @@ export interface AuthResponse {
 
 export const authService = {
     login: async (credentials: LoginPayload): Promise<AuthResponse> => {
-        // Force new ephemeral keys per session
-        const jwk = await initDPoPKeys(true);
+        // New ephemeral keys per session
+        const jwk = await initDPoPKeys();
 
         return await axiosClient.post("/auth/login", {
             ...credentials,

@@ -1,4 +1,3 @@
-// src/transactions/transactions.controller.ts
 import {
     Controller,
     Post,
@@ -30,7 +29,7 @@ export class TransactionsController {
      */
     @Post('transfer')
     async transfer(
-        @CurrentUser('sub') userId: string, // Extract sub directly
+        @CurrentUser('sub') userId: string,
         @Headers('x-idempotency-key') idempotencyKey: string,
         @Body() dto: TransferRequestDto,
     ) {

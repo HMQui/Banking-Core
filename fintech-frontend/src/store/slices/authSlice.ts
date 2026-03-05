@@ -48,7 +48,7 @@ export const refreshThunk = createAsyncThunk(
     },
 );
 
-export const logoutThunk = createAsyncThunk("auth/logout", async ( _, { rejectWithValue }) => {
+export const logoutThunk = createAsyncThunk("auth/logout", async (_, { rejectWithValue }) => {
     try {
         await authService.logout();
         localStorage.removeItem("refresh_token");

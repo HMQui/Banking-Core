@@ -1,6 +1,5 @@
-import { IsEnum, IsNotEmpty } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional } from 'class-validator';
 import { Currency } from '../entities/account.entity';
-import { Optional } from '@nestjs/common/decorators/core/optional.decorator';
 
 export class CreateAccountDto {
     // Currency selected by user (VND or USD)
@@ -12,6 +11,6 @@ export class CreateAccountDto {
     @IsNotEmpty()
     accountName!: string;
 
-    @Optional()
+    @IsOptional()
     isPrimary?: boolean;
 }

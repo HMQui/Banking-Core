@@ -1,4 +1,3 @@
-// pages/ComponentsPreview.tsx
 import { useState } from "react";
 import Toast, { type ToastType } from "./Toast";
 import ConfirmationModal from "../components/ConfirmationModal";

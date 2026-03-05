@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager } from 'typeorm';
 import { Account } from '../entities/account.entity';
 import { CreateAccountDto } from '../dto/create-account.dto';
+import { UpdateAccountDto } from '../dto/update-account.dto';
 
 @Injectable()
 export class AccountsService {
@@ -15,30 +16,99 @@ export class AccountsService {
         userId: string,
         createAccountDto: CreateAccountDto,
     ): Promise<Account> {
-        let accountNumber = '';
-        let isUnique = false;
-
-        // Generate a unique 10-digit account number
-        while (!isUnique) {
-            accountNumber = Math.floor(
-                1000000000 + Math.random() * 9000000000,
-            ).toString();
-            const existingAccount = await this.accountRepository.findOne({
-                where: { accountNumber },
+        return this.accountRepository.manager.transaction(async (manager) => {
+            const existingAccounts = await manager.find(Account, {
+                where: { userId },
             });
-            if (!existingAccount) {
-                isUnique = true;
+
+            let accountNumber = '';
+            let isUnique = false;
+
+            while (!isUnique) {
+                accountNumber = Math.floor(
+                    1000000000 + Math.random() * 9000000000,
+                ).toString();
+
+                const existing = await manager.findOne(Account, {
+                    where: { accountNumber },
+                });
+
+                if (!existing) isUnique = true;
             }
-        }
 
-        const newAccount = this.accountRepository.create({
-            userId,
-            accountNumber,
-            accountName: createAccountDto.accountName,
-            currency: createAccountDto.currency,
+            let isPrimary = false;
+
+            if (existingAccounts.length === 0) {
+                isPrimary = true;
+            } else if (createAccountDto.isPrimary) {
+                await manager.update(
+                    Account,
+                    { userId, isPrimary: true },
+                    { isPrimary: false },
+                );
+                isPrimary = true;
+            }
+
+            const newAccount = manager.create(Account, {
+                userId,
+                accountNumber,
+                accountName: createAccountDto.accountName,
+                currency: createAccountDto.currency,
+                isPrimary,
+            });
+
+            return manager.save(newAccount);
         });
+    }
 
-        return this.accountRepository.save(newAccount);
+    async updateAccount(
+        updateDto: UpdateAccountDto,
+        userId: string,
+    ): Promise<Account> {
+        return this.accountRepository.manager.transaction(async (manager) => {
+            const account = await manager.findOne(Account, {
+                where: { id: updateDto.id, userId },
+                lock: { mode: 'pessimistic_write' },
+            });
+
+            if (!account) {
+                throw new NotFoundException('Account not found');
+            }
+
+            if (updateDto.accountName !== undefined) {
+                account.accountName = updateDto.accountName;
+            }
+
+            if (updateDto.isPrimary === true) {
+                if (!account.isPrimary) {
+                    await manager.update(
+                        Account,
+                        { userId, isPrimary: true },
+                        { isPrimary: false },
+                    );
+
+                    account.isPrimary = true;
+                }
+            }
+
+            if (updateDto.isPrimary === false) {
+                if (account.isPrimary) {
+                    const primaryCount = await manager.count(Account, {
+                        where: { userId, isPrimary: true },
+                    });
+
+                    if (primaryCount <= 1) {
+                        throw new Error(
+                            'User must always have exactly one primary account',
+                        );
+                    }
+
+                    account.isPrimary = false;
+                }
+            }
+
+            return manager.save(account);
+        });
     }
 
     async getAccounts(userId: string): Promise<Account[]> {
