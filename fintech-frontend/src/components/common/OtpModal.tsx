@@ -93,7 +93,7 @@ export default function OtpModal({ email, onClose, onVerify, onResend }: OtpModa
                     className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-lg text-sm font-medium text-white bg-blue-900 hover:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <ShieldCheck className="w-5 h-5" />
-                    Verify & Login
+                    Verify OTP
                 </button>
 
                 <div className="mt-6 text-center text-sm">

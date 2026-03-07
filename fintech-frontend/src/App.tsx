@@ -7,7 +7,7 @@ import { router } from "./routes";
 import { useAppDispatch, useAppSelector } from "./hooks/redux";
 import type { LoadingState } from "./store/slices/loadingSlice";
 import { refreshThunk } from "./store/slices/authSlice";
-import Loading from "./components/Loading";
+import Loading from "./components/common/Loading";
 import { injectStore } from "./api/axiosClient";
 import "./index.css";
 import { initDPoPKeys } from "./utils/dpop";

@@ -9,3 +9,11 @@ export interface UserProfile {
     role: UserRole;
     createdAt: string;
 }
+
+export interface UpdateProfilePayload {
+    fullName?: string;
+}
+
+export interface SecurityInfo {
+    isTwoFactorEnabled: boolean;
+}

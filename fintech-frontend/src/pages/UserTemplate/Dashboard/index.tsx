@@ -6,7 +6,7 @@ import RecentTransactions from "./components/RecentTransactions";
 import EditAccountModal from "../../../components/Accounts/EditAccountModal";
 import SelectAccountModal from "./components/SelectAccountModal";
 import { useAccounts } from "../../../hooks/apiHooks/accounts/useAccounts";
-import Loading from "../../../components/Loading";
+import Loading from "../../../components/common/Loading";
 
 export default function Dashboard() {
     const { accounts = [], isLoading: isLoadingAccounts, refetch } = useAccounts();

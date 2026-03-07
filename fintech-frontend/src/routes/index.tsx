@@ -1,8 +1,10 @@
 import { lazy } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import AuthGuard from "../components/Guards/AuthGuard";
-import SuspenseWrapper from "./SuspenseWrapper";
 import GuestGuard from "../components/Guards/GuestGuard";
+import SuspenseWrapper from "./SuspenseWrapper";
+
+const HomeRedirect = lazy(() => import("../components/Guards/HomeRedirect"));
 
 const UserTemplate = lazy(() => import("../pages/UserTemplate"));
 const AdminTemplate = lazy(() => import("../pages/AdminTemplate"));
@@ -13,6 +15,8 @@ const Dashboard = lazy(() => import("../pages/UserTemplate/Dashboard"));
 const Transactions = lazy(() => import("../pages/UserTemplate/Transactions"));
 const Profile = lazy(() => import("../pages/UserTemplate/Profile"));
 const AccountManagement = lazy(() => import("../pages/UserTemplate/AccountManagement"));
+const Beneficiaries = lazy(() => import("../pages/UserTemplate/Beneficiaries"));
+const UserProfile = lazy(() => import("../pages/UserTemplate/UserProfile"));
 
 const AdminAuth = lazy(() => import("../pages/AuthPage/AdminAuth"));
 const AdminDashboard = lazy(() => import("../pages/AdminTemplate/AdminDashboard"));
@@ -20,6 +24,14 @@ const SecurityLogs = lazy(() => import("../pages/AdminTemplate/SecurityLogs"));
 const UserManagement = lazy(() => import("../pages/AdminTemplate/UserManagement"));
 
 export const router = createBrowserRouter([
+    {
+        path: "/",
+        element: (
+            <SuspenseWrapper>
+                <HomeRedirect />
+            </SuspenseWrapper>
+        ),
+    },
     {
         path: "/auth",
         element: (
@@ -41,20 +53,19 @@ export const router = createBrowserRouter([
     {
         element: (
             <SuspenseWrapper>
-                <UserTemplate />
+                <AuthGuard />
             </SuspenseWrapper>
         ),
         children: [
             {
                 element: (
                     <SuspenseWrapper>
-                        <AuthGuard />
+                        <UserTemplate />
                     </SuspenseWrapper>
                 ),
                 children: [
                     {
-                        index: true,
-                        path: "/",
+                        path: "/dashboard",
                         element: (
                             <SuspenseWrapper>
                                 <Dashboard />
@@ -62,7 +73,23 @@ export const router = createBrowserRouter([
                         ),
                     },
                     {
-                        path: "transactions",
+                        path: "/beneficiaries",
+                        element: (
+                            <SuspenseWrapper>
+                                <Beneficiaries />
+                            </SuspenseWrapper>
+                        ),
+                    },
+                    {
+                        path: "/me",
+                        element: (
+                            <SuspenseWrapper>
+                                <UserProfile />
+                            </SuspenseWrapper>
+                        ),
+                    },
+                    {
+                        path: "/transactions",
                         element: (
                             <SuspenseWrapper>
                                 <Transactions />
@@ -70,7 +97,7 @@ export const router = createBrowserRouter([
                         ),
                     },
                     {
-                        path: "profile",
+                        path: "/profile",
                         element: (
                             <SuspenseWrapper>
                                 <Profile />
@@ -78,13 +105,13 @@ export const router = createBrowserRouter([
                         ),
                     },
                     {
-                        path: "accounts-management",
+                        path: "/accounts-management",
                         element: (
                             <SuspenseWrapper>
                                 <AccountManagement />
                             </SuspenseWrapper>
                         ),
-                    }
+                    },
                 ],
             },
         ],

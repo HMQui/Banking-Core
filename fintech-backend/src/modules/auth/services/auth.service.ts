@@ -3,6 +3,7 @@ import {
     UnauthorizedException,
     ForbiddenException,
     ConflictException,
+    NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -25,6 +26,8 @@ import { OtpService } from './otp.service';
 import { RegisterInitRequestDto } from '../dto/register-init-request.dto';
 import { RegisterVerifyRequestDto } from '../dto/register-verify-request.dto';
 import { UsersService } from '../../users/users.service';
+import { ResetPasswordVerifyRequestDto } from '../dto/reset-password-verify-request.dto';
+import { ResetPasswordInitRequestDto } from '../dto/reset-password-init-request.dto';
 
 @Injectable()
 export class AuthService {
@@ -278,5 +281,98 @@ export class AuthService {
         });
 
         return { message: 'Registration successful. You can now log in.' };
+    }
+
+    async resetPasswordInit(
+        dto: ResetPasswordInitRequestDto,
+    ): Promise<{ message: string }> {
+        // 1. Verify user exists
+        const user = await this.userRepository.findOne({
+            where: { email: dto.email },
+        });
+
+        if (!user) {
+            // Anti-enumeration: Return generic message even if user doesn't exist
+            return {
+                message:
+                    'If the information is correct, an OTP has been sent to the email.',
+            };
+        }
+
+        if (user.status === UserStatus.LOCKED) {
+            throw new ForbiddenException('Account is locked.');
+        }
+
+        // 2. Verify current password
+        const isPasswordValid = await PasswordUtil.compare(
+            dto.currentPassword,
+            user.passwordHash,
+        );
+
+        if (!isPasswordValid) {
+            // To prevent brute-force, you might want to throw an error or handle it securely
+            throw new UnauthorizedException('Invalid current password.');
+        }
+
+        // 3. Remove existing pending reset OTP in Redis (if any)
+        const existingPending = await this.otpService.getResetData(dto.email);
+        if (existingPending) {
+            await this.otpService.deleteResetData(dto.email);
+        }
+
+        // 4. Generate a secure 6-digit OTP
+        const otp = this.otpService.generateOtp();
+
+        // 5. Cache the pending reset data in Redis (TTL: 5 minutes)
+        await this.otpService.saveResetData(dto.email, {
+            email: dto.email,
+            otp,
+        });
+
+        // 6. Dispatch the Reset OTP email
+        await this.mailService.sendResetOtpEmail(dto.email, otp, user.fullName);
+
+        return {
+            message:
+                'If the information is correct, an OTP has been sent to the email.',
+        };
+    }
+
+    async resetPasswordVerify(
+        dto: ResetPasswordVerifyRequestDto,
+    ): Promise<{ message: string }> {
+        // 1. Verify OTP and extract the cached payload from Redis
+        const pendingData = await this.otpService.verifyAndRetrieveResetData(
+            dto.email,
+            dto.otp,
+        );
+
+        // 2. Find the user
+        const user = await this.userRepository.findOne({
+            where: { email: pendingData.email },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found.');
+        }
+
+        // 3. Hash the new password securely
+        const newPasswordHash = await PasswordUtil.hash(dto.newPassword);
+
+        // 4. Update the password in database
+        user.passwordHash = newPasswordHash;
+        await this.userRepository.save(user);
+
+        // 5. Security measure: Revoke all active sessions and devices
+        // Forces the user to log in again with the new password on all devices
+        const userDevices = await this.devicesService.findAllByUserId(user.id);
+        for (const device of userDevices) {
+            await this.sessionsService.revokeAllForDevice(device.id);
+        }
+
+        return {
+            message:
+                'Password has been reset successfully. You can now log in.',
+        };
     }
 }

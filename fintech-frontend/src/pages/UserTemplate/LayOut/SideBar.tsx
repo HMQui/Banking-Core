@@ -1,4 +1,5 @@
 import React from "react";
+import { useLocation, Link } from "react-router-dom";
 import {
     LayoutDashboard,
     ArrowLeftRight,
@@ -20,18 +21,22 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const user = useSelector((state: RootReduxState) => state.auth.user);
+    const location = useLocation();
+
     const navItems = [
-        { name: "Dashboard", icon: LayoutDashboard, active: true },
-        { name: "Transfer", icon: ArrowLeftRight, active: false },
-        { name: "Beneficiaries", icon: Users, active: false },
-        { name: "Cards", icon: CreditCard, active: false },
-        { name: "Statements", icon: FileText, active: false },
+        { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+        { name: "Transfer", icon: ArrowLeftRight, href: "/transfer" },
+        { name: "Beneficiaries", icon: Users, href: "/beneficiaries" },
+        { name: "Cards", icon: CreditCard, href: "/accounts-management" },
+        { name: "Statements", icon: FileText, href: "/statements" },
     ];
 
     const systemItems = [
-        { name: "Settings", icon: Settings, active: false },
-        { name: "Support", icon: HelpCircle, active: false },
+        { name: "Setting Profile", icon: Settings, href: "/me" },
+        { name: "Support", icon: HelpCircle, href: "/support" },
     ];
+
+    const isActive = (path: string) => location.pathname === path;
 
     return (
         <>
@@ -68,23 +73,28 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 {/* Sidebar Navigation */}
                 <nav className="flex-1 overflow-y-auto py-4">
                     <ul className="px-3 space-y-1">
-                        {navItems.map((item) => (
-                            <li key={item.name}>
-                                <a
-                                    href={`#${item.name.toLowerCase()}`}
-                                    className={`flex items-center px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                                        item.active
-                                            ? "bg-blue-900/50 text-blue-400"
-                                            : "hover:text-white hover:bg-slate-800"
-                                    }`}
-                                >
-                                    <item.icon
-                                        className={`w-5 h-5 mr-3 ${item.active ? "text-blue-500" : "text-slate-400"}`}
-                                    />
-                                    {item.name}
-                                </a>
-                            </li>
-                        ))}
+                        {navItems.map((item) => {
+                            const active = isActive(item.href);
+                            return (
+                                <li key={item.name}>
+                                    <Link
+                                        to={item.href}
+                                        className={`flex items-center px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                                            active
+                                                ? "bg-blue-900/50 text-blue-400"
+                                                : "hover:text-white hover:bg-slate-800"
+                                        }`}
+                                    >
+                                        <item.icon
+                                            className={`w-5 h-5 mr-3 ${
+                                                active ? "text-blue-500" : "text-slate-400"
+                                            }`}
+                                        />
+                                        {item.name}
+                                    </Link>
+                                </li>
+                            );
+                        })}
                     </ul>
 
                     <div className="mt-8 px-6 mb-2">
@@ -93,17 +103,28 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         </p>
                     </div>
                     <ul className="px-3 space-y-1">
-                        {systemItems.map((item) => (
-                            <li key={item.name}>
-                                <a
-                                    href={`#${item.name.toLowerCase()}`}
-                                    className="flex items-center px-3 py-2.5 rounded-md text-sm font-medium transition-colors hover:text-white hover:bg-slate-800"
-                                >
-                                    <item.icon className="w-5 h-5 mr-3 text-slate-400" />
-                                    {item.name}
-                                </a>
-                            </li>
-                        ))}
+                        {systemItems.map((item) => {
+                            const active = isActive(item.href);
+                            return (
+                                <li key={item.name}>
+                                    <Link
+                                        to={item.href}
+                                        className={`flex items-center px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                                            active
+                                                ? "bg-blue-900/50 text-blue-400"
+                                                : "hover:text-white hover:bg-slate-800"
+                                        }`}
+                                    >
+                                        <item.icon
+                                            className={`w-5 h-5 mr-3 ${
+                                                active ? "text-blue-500" : "text-slate-400"
+                                            }`}
+                                        />
+                                        {item.name}
+                                    </Link>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </nav>
 
@@ -115,9 +136,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                                 {user.fullName.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-white">
-                                    {user ? user.fullName : "Unknown User"}
-                                </p>
+                                <p className="text-sm font-medium text-white">{user.fullName}</p>
                                 <p className="text-xs text-slate-400">
                                     {user.role === "USER" ? "Personal Account" : "Admin Account"}
                                 </p>
@@ -130,9 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                             <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-sm font-medium text-white mr-3">
                                 B
                             </div>
-                            <div>
-                                LogIn to see profile
-                            </div>
+                            <div>LogIn to see profile</div>
                         </div>
                     </div>
                 )}

@@ -18,7 +18,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
     const handleLogout = async () => {
         try {
             await dispatch(logoutThunk()).unwrap();
-            navigate("/login");
+            navigate("/");
         } catch (error) {
             if (error instanceof Error) {
                 console.error("Logout failed:", error.message);

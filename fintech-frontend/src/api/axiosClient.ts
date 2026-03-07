@@ -65,6 +65,16 @@ axiosClient.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as CustomAxiosRequestConfig;
 
+        // Prevent intercepting 401 errors from core auth routes to avoid infinite loop
+        const isAuthRoute =
+            originalRequest.url?.includes("/auth/login") ||
+            originalRequest.url?.includes("/auth/logout") ||
+            originalRequest.url?.includes("/auth/refresh");
+
+        if (error.response?.status === 401 && isAuthRoute) {
+            return Promise.reject(error);
+        }
+
         if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
             originalRequest._retry = true;
 

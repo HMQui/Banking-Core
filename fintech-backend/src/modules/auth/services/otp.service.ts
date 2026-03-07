@@ -10,10 +10,18 @@ export interface PendingRegistrationData {
     otp: string;
 }
 
+export interface PendingResetData {
+    email: string;
+    otp: string;
+}
+
 @Injectable()
 export class OtpService {
     private readonly OTP_TTL_SECONDS = 300;
     private readonly REDIS_PREFIX = 'register:otp:';
+
+    // Separate prefix to prevent key collision with registration
+    private readonly RESET_REDIS_PREFIX = 'reset:otp:';
 
     constructor(@Inject('REDIS_CLIENT') private readonly redisClient: Redis) {}
 
@@ -86,6 +94,52 @@ export class OtpService {
         const storedData: PendingRegistrationData = JSON.parse(
             storedDataString,
         ) as PendingRegistrationData;
+
+        if (storedData.otp !== providedOtp) {
+            throw new BadRequestException('Invalid OTP.');
+        }
+
+        await this.redisClient.del(key);
+
+        const { otp, ...userData } = storedData;
+        return userData;
+    }
+
+    async saveResetData(email: string, data: PendingResetData): Promise<void> {
+        const key = `${this.RESET_REDIS_PREFIX}${email}`;
+        const payload = JSON.stringify(data);
+
+        await this.redisClient.set(key, payload, 'EX', this.OTP_TTL_SECONDS);
+    }
+
+    async getResetData(email: string): Promise<PendingResetData | null> {
+        const key = `${this.RESET_REDIS_PREFIX}${email}`;
+        const storedDataString = await this.redisClient.get(key);
+
+        if (!storedDataString) return null;
+
+        return JSON.parse(storedDataString) as PendingResetData;
+    }
+
+    async deleteResetData(email: string): Promise<void> {
+        const key = `${this.RESET_REDIS_PREFIX}${email}`;
+        await this.redisClient.del(key);
+    }
+
+    async verifyAndRetrieveResetData(
+        email: string,
+        providedOtp: string,
+    ): Promise<Omit<PendingResetData, 'otp'>> {
+        const key = `${this.RESET_REDIS_PREFIX}${email}`;
+        const storedDataString = await this.redisClient.get(key);
+
+        if (!storedDataString) {
+            throw new BadRequestException('OTP has expired or does not exist.');
+        }
+
+        const storedData: PendingResetData = JSON.parse(
+            storedDataString,
+        ) as PendingResetData;
 
         if (storedData.otp !== providedOtp) {
             throw new BadRequestException('Invalid OTP.');

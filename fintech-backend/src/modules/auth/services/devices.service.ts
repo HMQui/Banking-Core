@@ -32,4 +32,10 @@ export class DevicesService {
         device.lastActiveAt = new Date();
         return this.deviceRepository.save(device);
     }
+
+    async findAllByUserId(userId: string): Promise<Device[]> {
+        return this.deviceRepository.find({
+            where: { userId },
+        });
+    }
 }

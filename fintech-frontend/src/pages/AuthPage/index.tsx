@@ -2,11 +2,12 @@ import { useState } from "react";
 import AuthHeader from "./LayOut/AuthHeader";
 import AuthFooter from "./LayOut/AuthFooter";
 import AuthForm from "./components/AuthForm";
-import OtpModal from "./components/OtpModal";
+import OtpModal from "../../components/common/OtpModal";
 import { useAppDispatch } from "../../hooks/redux";
 import { loginThunk } from "../../store/slices/authSlice";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../../api/authService";
+import { toast } from "../../components/common/Toast/toastManager";
 
 export default function AuthPage() {
     const [isLogin, setIsLogin] = useState(true);
@@ -19,7 +20,7 @@ export default function AuthPage() {
         try {
             const deviceName = navigator.platform || "Unknown Device";
             const userAgent = navigator.userAgent || "Unknown User Agent";
-            await dispatch(loginThunk({ email, password, deviceName, userAgent }));
+            await dispatch(loginThunk({ email, password, deviceName, userAgent })).unwrap();
             navigate("/");
         } catch (error) {
             if (error instanceof Error) {
@@ -27,6 +28,7 @@ export default function AuthPage() {
             } else {
                 console.error("Login error:", error);
             }
+            toast.error("Login Failed", "Please check your credentials and try again.");
         }
     };
 

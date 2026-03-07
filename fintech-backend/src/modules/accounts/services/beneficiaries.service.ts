@@ -1,21 +1,57 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Beneficiary } from '../entities/beneficiary.entity';
 import { CreateBeneficiaryDto } from '../dto/create-beneficiary.dto';
 import { UpdateBeneficiaryDto } from '../dto/update-beneficiary.dto';
+import { AccountsService } from './accounts.service';
 
 @Injectable()
 export class BeneficiariesService {
     constructor(
         @InjectRepository(Beneficiary)
         private readonly beneficiaryRepository: Repository<Beneficiary>,
+        private readonly accountsService: AccountsService,
     ) {}
 
     async addBeneficiary(
         userId: string,
         createBeneficiaryDto: CreateBeneficiaryDto,
     ): Promise<Beneficiary> {
+        // Verify the account exists
+        const account = await this.accountsService.findAccountByNumber(
+            createBeneficiaryDto.accountNumber,
+        );
+
+        if (!account) {
+            throw new NotFoundException('Target account does not exist');
+        }
+
+        // Prevent adding user's own account as beneficiary
+        if (account.userId === userId) {
+            throw new BadRequestException(
+                'You cannot add your own account as a beneficiary',
+            );
+        }
+
+        // Prevent duplicate beneficiary
+        const existing = await this.beneficiaryRepository.findOne({
+            where: {
+                userId,
+                accountNumber: createBeneficiaryDto.accountNumber,
+            },
+        });
+
+        if (existing) {
+            throw new BadRequestException(
+                'This beneficiary already exists in your list',
+            );
+        }
+
         const beneficiary = this.beneficiaryRepository.create({
             userId,
             nickname: createBeneficiaryDto.nickname,
@@ -27,7 +63,6 @@ export class BeneficiariesService {
     }
 
     async getBeneficiaries(userId: string): Promise<Beneficiary[]> {
-        // Enforce Me Pattern
         return this.beneficiaryRepository.find({
             where: { userId },
             order: { createdAt: 'DESC' },

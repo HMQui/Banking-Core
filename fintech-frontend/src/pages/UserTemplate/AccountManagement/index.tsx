@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import CreateAccountModal from "../../../components/Accounts/CreateAccountModal";
 import EditAccountModal from "../../../components/Accounts/EditAccountModal";
 import { useAccounts } from "../../../hooks/apiHooks/accounts/useAccounts";
-import Loading from "../../../components/Loading";
+import Loading from "../../../components/common/Loading";
 import AccountCard from "./components/AccountCard";
 
 export default function AccountManagement() {
