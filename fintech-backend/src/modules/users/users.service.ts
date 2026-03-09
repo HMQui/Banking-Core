@@ -31,6 +31,20 @@ export class UsersService {
         return user;
     }
 
+    // Retrieves a paginated list of all users in the system
+    async findAll(
+        page: number = 1,
+        limit: number = 10,
+    ): Promise<{ data: User[]; total: number }> {
+        const [data, total] = await this.userRepository.findAndCount({
+            skip: (page - 1) * limit,
+            take: limit,
+            order: { createdAt: 'DESC' },
+        });
+
+        return { data, total };
+    }
+
     // Updates the user's account status (e.g., locking the account)
     async updateStatus(id: string, status: UserStatus): Promise<User> {
         const user = await this.findById(id);

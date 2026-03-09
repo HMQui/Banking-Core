@@ -13,6 +13,7 @@ import { RedisModule } from './redis/redis.module';
 import { MailModule } from './modules/mail/mail.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
     imports: [
@@ -60,6 +61,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
         AuditLogsModule,
         MailModule,
         NotificationsModule,
+        AdminModule,
     ],
     controllers: [AppController],
     providers: [AppService],

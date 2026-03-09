@@ -15,7 +15,7 @@ import { TransferRequestDto } from './dto/transfer-request.dto';
 import { GetHistoryRequestDto } from './dto/get-history-request.dto';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { DPoPGuard } from '../auth/guards/dpop.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CurrentUser } from '../../decorators/current-user.decorator';
 
 @UseGuards(JwtAuthGuard, DPoPGuard)
 @UseInterceptors(ClassSerializerInterceptor)

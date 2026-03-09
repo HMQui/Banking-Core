@@ -4,7 +4,7 @@ import { GetAuditLogsDto } from './dto/get-audit-logs.dto';
 // Import your authentication guards (adjust the path based on your actual auth module location)
 import { DPoPGuard } from '../auth/guards/dpop.guard';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CurrentUser } from '../../decorators/current-user.decorator';
 
 @Controller('audit-logs')
 // Apply authentication and DPoP protection to all endpoints in this controller

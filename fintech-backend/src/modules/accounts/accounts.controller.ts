@@ -22,7 +22,7 @@ import { BeneficiaryResponseDto } from './dto/beneficiary-response.dto';
 
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { DPoPGuard } from '../auth/guards/dpop.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CurrentUser } from '../../decorators/current-user.decorator';
 import { UpdateAccountDto } from './dto/update-account.dto';
 
 @UseGuards(JwtAuthGuard, DPoPGuard)

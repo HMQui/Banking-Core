@@ -3,7 +3,7 @@ import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserProfileResponseDto } from './dto/user-profile-response.dto';
 import { plainToInstance } from 'class-transformer';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CurrentUser } from '../../decorators/current-user.decorator';
 import { DPoPGuard } from '../auth/guards/dpop.guard';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 
