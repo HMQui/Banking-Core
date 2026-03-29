@@ -48,7 +48,9 @@ export class DPoPGuard implements CanActivate {
                 );
             }
 
-            const originalUrl = `${request.protocol}://${request.get('host')}${request.originalUrl}`;
+            const path = request.originalUrl.split('?')[0];
+
+            const originalUrl = `${request.protocol}://${request.get('host')}${path}`;
             const method = request.method;
 
             const payload: DPoPProofPayload = await DPoPUtil.verifyDPoPProof(

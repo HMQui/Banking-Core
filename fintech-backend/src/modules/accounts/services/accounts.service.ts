@@ -132,6 +132,7 @@ export class AccountsService {
             : this.accountRepository;
         return repository.findOne({
             where: { userId },
+            lock: manager ? { mode: 'pessimistic_write' } : undefined,
         });
     }
 

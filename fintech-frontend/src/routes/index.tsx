@@ -12,11 +12,12 @@ const NotFound = lazy(() => import("../pages/NotFound"));
 
 const AuthPage = lazy(() => import("../pages/AuthPage"));
 const Dashboard = lazy(() => import("../pages/UserTemplate/Dashboard"));
-const Transactions = lazy(() => import("../pages/UserTemplate/Transactions"));
 const Profile = lazy(() => import("../pages/UserTemplate/Profile"));
 const AccountManagement = lazy(() => import("../pages/UserTemplate/AccountManagement"));
 const Beneficiaries = lazy(() => import("../pages/UserTemplate/Beneficiaries"));
 const UserProfile = lazy(() => import("../pages/UserTemplate/UserProfile"));
+const TransactionHistory = lazy(() => import("../pages/UserTemplate/TransactionHistoryPage"));
+const TransactionPage = lazy(() => import("../pages/UserTemplate/Transaction"));
 
 const AdminAuth = lazy(() => import("../pages/AuthPage/AdminAuth"));
 const AdminDashboard = lazy(() => import("../pages/AdminTemplate/AdminDashboard"));
@@ -89,10 +90,18 @@ export const router = createBrowserRouter([
                         ),
                     },
                     {
+                        path: "statements",
+                        element: (
+                            <SuspenseWrapper>
+                                <TransactionHistory />
+                            </SuspenseWrapper>
+                        ),
+                    },
+                    {
                         path: "/transactions",
                         element: (
                             <SuspenseWrapper>
-                                <Transactions />
+                                <TransactionPage />
                             </SuspenseWrapper>
                         ),
                     },

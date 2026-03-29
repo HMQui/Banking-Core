@@ -15,16 +15,11 @@ import { RefreshTokenRequestDto } from './dto/refresh-token-request.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { DPoPGuard } from './guards/dpop.guard';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { RegisterInitRequestDto } from './dto/register-init-request.dto';
 import { RegisterVerifyRequestDto } from './dto/register-verify-request.dto';
 import { ResetPasswordInitRequestDto } from './dto/reset-password-init-request.dto';
 import { ResetPasswordVerifyRequestDto } from './dto/reset-password-verify-request.dto';
 import { plainToInstance } from 'class-transformer';
-
-interface RequestWithUser extends Request {
-    user?: JwtPayload;
-}
 
 @Controller('auth')
 export class AuthController {
@@ -63,7 +58,9 @@ export class AuthController {
         @Headers('dpop') dpopHeader: string,
         @Req() request: Request,
     ): Promise<AuthResponseDto> {
-        const originalUrl = `${request.protocol}://${request.get('host')}${request.originalUrl}`;
+        const originalUrl = `${request.protocol}://${request.get(
+            'host',
+        )}${request.originalUrl}`;
 
         const authResponse = await this.authService.refresh(
             dto,
@@ -80,10 +77,9 @@ export class AuthController {
     @UseGuards(JwtAuthGuard, DPoPGuard)
     @Post('logout')
     @HttpCode(HttpStatus.OK)
-    async logout(
-        @Req() request: RequestWithUser,
-    ): Promise<{ message: string }> {
+    async logout(@Req() request: Request): Promise<{ message: string }> {
         const sessionId = request.user!.sid;
+
         await this.authService.logout(sessionId);
 
         return { message: 'Session successfully revoked.' };

@@ -12,6 +12,7 @@ import { TransferRequestDto } from '../dto/transfer-request.dto';
 import { AccountsService } from '../../accounts/services/accounts.service';
 import { GetHistoryRequestDto } from '../dto/get-history-request.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { QueryRunner } from 'typeorm/browser';
 
 @Injectable()
 export class TransactionsService {
@@ -27,41 +28,67 @@ export class TransactionsService {
     async transfer(
         userId: string,
         idempotencyKey: string,
-        dto: TransferRequestDto,
-    ): Promise<Transaction | undefined> {
-        const { receiverAccountNumber, amount, currency, description } = dto;
+        dto: TransferRequestDto & { senderAccountId: string },
+    ): Promise<Transaction> {
+        const {
+            senderAccountId,
+            receiverAccountNumber,
+            amount,
+            currency,
+            description,
+        } = dto;
 
-        // check for existing request with same key
+        // fail fast outside transaction
         const existingTx = await this.dataSource
             .getRepository(Transaction)
             .findOne({ where: { idempotencyKey } });
+
         if (existingTx) {
-            throw new ConflictException(
-                'Duplicate request with this idempotency key',
-            );
+            if (existingTx.status === TransactionStatus.SUCCESS) {
+                return existingTx;
+            }
+            if (existingTx.status === TransactionStatus.PENDING) {
+                throw new ConflictException(
+                    'Transaction is currently being processed',
+                );
+            }
+            if (existingTx.status === TransactionStatus.FAILED) {
+                throw new BadRequestException(
+                    'Previous transaction with this idempotency key failed',
+                );
+            }
         }
 
-        // begin a manual DB transaction
-        const queryRunner = this.dataSource.createQueryRunner();
+        const queryRunner: QueryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
-            // look up and verify sender/receiver
+            // verify specific sender account with lock
             const senderAccount =
                 await this.accountsService.findAccountByUserId(
-                    userId,
+                    senderAccountId,
                     queryRunner.manager,
                 );
+
             if (!senderAccount) {
                 throw new NotFoundException('Sender account not found');
             }
 
+            // security check: verify ownership
+            if (senderAccount.userId !== userId) {
+                throw new BadRequestException(
+                    'You do not own the selected source account',
+                );
+            }
+
+            // verify receiver with lock
             const receiverAccount =
                 await this.accountsService.findAccountByNumber(
                     receiverAccountNumber,
                     queryRunner.manager,
                 );
+
             if (!receiverAccount) {
                 throw new NotFoundException('Receiver account not found');
             }
@@ -72,7 +99,24 @@ export class TransactionsService {
                 );
             }
 
-            // adjust balances; service applies locking
+            if (senderAccount.balance < amount) {
+                throw new BadRequestException('Insufficient balance');
+            }
+
+            // reserve idempotency key
+            const initialTransaction = queryRunner.manager.create(Transaction, {
+                senderId: senderAccount.id,
+                receiverId: receiverAccount.id,
+                amount,
+                currency,
+                description,
+                idempotencyKey,
+                status: TransactionStatus.PENDING,
+            });
+            let savedTransaction =
+                await queryRunner.manager.save(initialTransaction);
+
+            // adjust balances
             await this.accountsService.updateBalance(
                 senderAccount.id,
                 -amount,
@@ -84,19 +128,7 @@ export class TransactionsService {
                 queryRunner.manager,
             );
 
-            // record transaction and ledger entries
-            const transaction = queryRunner.manager.create(Transaction, {
-                senderId: senderAccount.id,
-                receiverId: receiverAccount.id,
-                amount,
-                currency,
-                description,
-                idempotencyKey,
-                status: TransactionStatus.SUCCESS,
-            });
-            const savedTransaction =
-                await queryRunner.manager.save(transaction);
-
+            // record ledger
             const ledgerEntries = [
                 queryRunner.manager.create(LedgerEntry, {
                     transactionId: savedTransaction.id,
@@ -113,30 +145,41 @@ export class TransactionsService {
             ];
             await queryRunner.manager.save(LedgerEntry, ledgerEntries);
 
+            // commit success
+            savedTransaction.status = TransactionStatus.SUCCESS;
+            savedTransaction = await queryRunner.manager.save(savedTransaction);
+
             await queryRunner.commitTransaction();
 
-            // emit event after commit to avoid false positives
             this.eventEmitter.emit('transaction.success', {
-                receiverId: receiverAccount['userId'] || receiverAccount.id,
+                receiverId: receiverAccount.userId ?? receiverAccount.id,
                 amount: savedTransaction.amount,
                 currency: savedTransaction.currency,
-                senderName: String(senderAccount['userId'] || senderAccount.id),
+                senderName: String(senderAccount.userId ?? senderAccount.id),
                 description: savedTransaction.description,
                 timestamp: new Date().toISOString(),
             });
 
             return savedTransaction;
-        } catch (error) {
-            // rollback any changes
+        } catch (error: unknown) {
             await queryRunner.rollbackTransaction();
 
             if (
                 error instanceof BadRequestException ||
-                error instanceof NotFoundException
+                error instanceof NotFoundException ||
+                error instanceof ConflictException
             ) {
                 throw error;
             }
-            if (error instanceof InternalServerErrorException) {
+
+            const dbError = error as { code?: string; errno?: number };
+            if (dbError.code === '23505' || dbError.errno === 1062) {
+                throw new ConflictException(
+                    'Duplicate request with this idempotency key is already processing',
+                );
+            }
+
+            if (error instanceof Error) {
                 throw new InternalServerErrorException(
                     'Transaction failed: ' + error.message,
                 );
@@ -146,7 +189,6 @@ export class TransactionsService {
                 'Unexpected error during transaction transfer',
             );
         } finally {
-            // release query runner resources
             await queryRunner.release();
         }
     }

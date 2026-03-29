@@ -16,12 +16,16 @@ import { GetHistoryRequestDto } from './dto/get-history-request.dto';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { DPoPGuard } from '../auth/guards/dpop.guard';
 import { CurrentUser } from '../../decorators/current-user.decorator';
+import { LedgerService } from './services/ledger.service';
 
 @UseGuards(JwtAuthGuard, DPoPGuard)
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('transactions')
 export class TransactionsController {
-    constructor(private readonly transactionsService: TransactionsService) {}
+    constructor(
+        private readonly transactionsService: TransactionsService,
+        private readonly ledgerService: LedgerService,
+    ) {}
 
     /**
      * POST /transactions/transfer
@@ -56,5 +60,13 @@ export class TransactionsController {
         @Query() query: GetHistoryRequestDto,
     ) {
         return await this.transactionsService.getHistory(userId, query);
+    }
+
+    @Get('statement')
+    async getMyStatement(
+        @CurrentUser('sub') userId: string,
+        @Query() query: GetHistoryRequestDto,
+    ) {
+        return await this.ledgerService.getStatement(userId, query);
     }
 }

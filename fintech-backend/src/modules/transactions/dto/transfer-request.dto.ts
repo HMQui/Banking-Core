@@ -14,6 +14,11 @@ export class TransferRequestDto {
     @IsNotEmpty()
     @IsString()
     @Length(5, 20)
+    senderAccountId!: string;
+
+    @IsNotEmpty()
+    @IsString()
+    @Length(5, 20)
     receiverAccountNumber!: string;
 
     @IsNotEmpty()

@@ -25,7 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
     const navItems = [
         { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-        { name: "Transfer", icon: ArrowLeftRight, href: "/transfer" },
+        { name: "Transfer", icon: ArrowLeftRight, href: "/transactions" },
         { name: "Beneficiaries", icon: Users, href: "/beneficiaries" },
         { name: "Cards", icon: CreditCard, href: "/accounts-management" },
         { name: "Statements", icon: FileText, href: "/statements" },
