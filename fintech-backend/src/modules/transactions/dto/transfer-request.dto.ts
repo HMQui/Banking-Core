@@ -13,7 +13,7 @@ import { Currency } from '../../accounts/entities/account.entity';
 export class TransferRequestDto {
     @IsNotEmpty()
     @IsString()
-    @Length(5, 20)
+    @Length(5, 36)
     senderAccountId!: string;
 
     @IsNotEmpty()

@@ -63,8 +63,6 @@ export default function TransactionPage() {
         e.preventDefault();
         if (!validateForm()) return;
 
-        setFieldError("");
-
         const payload: TransferPayload = {
             senderAccountId: currentSenderId,
             receiverAccountNumber: formData.receiverAccountNumber.trim(),

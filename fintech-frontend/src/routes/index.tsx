@@ -12,7 +12,6 @@ const NotFound = lazy(() => import("../pages/NotFound"));
 
 const AuthPage = lazy(() => import("../pages/AuthPage"));
 const Dashboard = lazy(() => import("../pages/UserTemplate/Dashboard"));
-const Profile = lazy(() => import("../pages/UserTemplate/Profile"));
 const AccountManagement = lazy(() => import("../pages/UserTemplate/AccountManagement"));
 const Beneficiaries = lazy(() => import("../pages/UserTemplate/Beneficiaries"));
 const UserProfile = lazy(() => import("../pages/UserTemplate/UserProfile"));
@@ -102,14 +101,6 @@ export const router = createBrowserRouter([
                         element: (
                             <SuspenseWrapper>
                                 <TransactionPage />
-                            </SuspenseWrapper>
-                        ),
-                    },
-                    {
-                        path: "/profile",
-                        element: (
-                            <SuspenseWrapper>
-                                <Profile />
                             </SuspenseWrapper>
                         ),
                     },

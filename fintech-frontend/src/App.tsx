@@ -10,7 +10,7 @@ import { refreshThunk } from "./store/slices/authSlice";
 import Loading from "./components/common/Loading";
 import { injectStore } from "./api/axiosClient";
 import "./index.css";
-import { initDPoPKeys } from "./utils/dpop";
+import { initDPoPKeys } from "./utils/dpopService";
 import ToastContainer from "./components/common/Toast/ToastContainer";
 
 injectStore(store);

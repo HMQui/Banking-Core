@@ -1,11 +1,13 @@
 import { ArrowLeftRight, Settings, ChevronRight, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function QuickActionsCard() {
     const actions = [
-        { name: "Transfer", icon: ArrowLeftRight },
-        { name: "Beneficiaries", icon: Users },
-        { name: "Settings", icon: Settings },
+        { name: "Transfer", icon: ArrowLeftRight, href: "/transactions" },
+        { name: "Beneficiaries", icon: Users, href: "/beneficiaries" },
+        { name: "Settings", icon: Settings, href: "/me" },
     ];
+    const navigate = useNavigate();
 
     return (
         <div className="md:col-span-1 bg-white rounded-xl p-6 border border-slate-200 h-full">
@@ -15,6 +17,7 @@ export default function QuickActionsCard() {
                     <button
                         key={idx}
                         className="flex items-center justify-between w-full p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors group"
+                        onClick={() => navigate(action.href)}
                     >
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 group-hover:text-blue-900 group-hover:bg-blue-100 transition-colors">

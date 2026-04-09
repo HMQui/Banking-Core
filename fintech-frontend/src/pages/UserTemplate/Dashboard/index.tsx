@@ -7,16 +7,19 @@ import EditAccountModal from "../../../components/Accounts/EditAccountModal";
 import SelectAccountModal from "./components/SelectAccountModal";
 import { useAccounts } from "../../../hooks/apiHooks/accounts/useAccounts";
 import Loading from "../../../components/common/Loading";
+import { useTransactionHistory } from "../../../hooks/apiHooks/transactions/useTransactionHistory";
 
 export default function Dashboard() {
     const { accounts = [], isLoading: isLoadingAccounts, refetch } = useAccounts();
+    const { history: historyTransactions, isLoading: isTransactionHistoryLoading } =
+        useTransactionHistory({ page: 1, limit: 5 });
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
     const [activeAccountId, setActiveAccountId] = useState<string | null>(null);
 
     const activeAccount = accounts.find((acc) => acc.id === activeAccountId) ?? null;
-
+    
     // Initialize active account when accounts are loaded
     useEffect(() => {
         if (accounts.length > 0 && !activeAccountId) {
@@ -24,7 +27,7 @@ export default function Dashboard() {
         }
     }, [accounts]);
 
-    if (isLoadingAccounts) {
+    if (isLoadingAccounts || isTransactionHistoryLoading) {
         return <Loading />;
     }
 
@@ -32,7 +35,7 @@ export default function Dashboard() {
         await refetch();
         setIsEditModalOpen(false);
     };
-
+    
     return (
         <div className="bg-slate-50 min-h-full font-sans p-4 md:p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
@@ -119,7 +122,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="md:col-span-3">
-                    <RecentTransactions />
+                    <RecentTransactions transactions={historyTransactions?.data || []} />
                 </div>
             </div>
 

@@ -7,11 +7,18 @@ export const useTransactionHistory = (initialQuery?: GetHistoryQuery) => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
 
-    const fetchHistory = useCallback(async (query?: GetHistoryQuery) => {
+    // Manage current query state inside the hook
+    const [query, setQuery] = useState<GetHistoryQuery>({
+        page: 1,
+        limit: 10,
+        ...initialQuery,
+    });
+
+    const fetchHistory = useCallback(async (currentQuery: GetHistoryQuery) => {
         setIsLoading(true);
         setError(null);
         try {
-            const data = await transactionService.getHistory(query);
+            const data = await transactionService.getHistory(currentQuery);
             setHistory(data);
         } catch (err) {
             setError(err instanceof Error ? err : new Error("Failed to fetch transaction history"));
@@ -20,11 +27,28 @@ export const useTransactionHistory = (initialQuery?: GetHistoryQuery) => {
         }
     }, []);
 
-    // Auto-fetch on mount
+    // Auto-fetch when query state changes
     useEffect(() => {
-        fetchHistory(initialQuery);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fetchHistory]);
+        fetchHistory(query);
+    }, [query, fetchHistory]);
 
-    return { history, isLoading, error, refetch: fetchHistory };
+    // Helper to update specific filters and reset to page 1
+    const updateFilters = (newFilters: Partial<GetHistoryQuery>) => {
+        setQuery((prev) => ({ ...prev, ...newFilters, page: 1 }));
+    };
+
+    // Helper for pagination
+    const changePage = (newPage: number) => {
+        setQuery((prev) => ({ ...prev, page: newPage }));
+    };
+
+    return {
+        history,
+        isLoading,
+        error,
+        query,
+        updateFilters,
+        changePage,
+        refetch: () => fetchHistory(query),
+    };
 };

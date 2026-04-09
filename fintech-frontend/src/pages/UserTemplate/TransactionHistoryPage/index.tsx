@@ -1,27 +1,23 @@
-import { useState, useEffect } from "react";
 import Loading from "../../../components/common/Loading";
-import type { GetHistoryQuery } from "../../../types/transaction";
-import { useAppSelector } from "../../../hooks/redux"; // Giả sử bạn có hook lấy current user
 import TransactionFilters from "./components/TransactionFilters";
 import TransactionTable from "./components/TransactionTable";
 import TransactionEmptyState from "./components/TransactionEmptyState";
 import { useTransactionHistory } from "../../../hooks/apiHooks/transactions/useTransactionHistory";
+import { useAccounts } from "../../../hooks/apiHooks/accounts/useAccounts";
 
 export default function TransactionHistoryPage() {
-    const currentUser = useAppSelector((state) => state.auth.user);
+    // Use the new custom hook that internalizes the query state
+    const { history, isLoading, error, query, updateFilters, changePage } = useTransactionHistory();
 
-    const [queryParams, setQueryParams] = useState<GetHistoryQuery>({ page: 1, limit: 10 });
-    const { history, isLoading, error, refetch } = useTransactionHistory(queryParams);
+    // Fetch accounts to populate the dropdown and calculate debit/credit correctly
+    const { accounts, isLoading: isLoadingAccounts } = useAccounts();
 
-    useEffect(() => {
-        refetch(queryParams);
-    }, [queryParams, refetch]);
-
-    if (isLoading && !history) {
+    if ((isLoading && !history) || isLoadingAccounts) {
         return <Loading />;
     }
 
     const hasTransactions = history && history.data && history.data.length > 0;
+    const userAccountIds = accounts.map((acc) => acc.id);
 
     return (
         <div className="min-h-screen bg-slate-50 p-6">
@@ -53,11 +49,15 @@ export default function TransactionHistoryPage() {
                 </div>
 
                 {/* Filters Section */}
-                <TransactionFilters />
+                <TransactionFilters
+                    query={query}
+                    updateFilters={updateFilters}
+                    accounts={accounts}
+                />
 
                 {/* Main Content Area */}
                 {error ? (
-                    <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 text-center text-sm">
+                    <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 text-center text-sm font-medium">
                         Failed to load transactions. Please try again.
                     </div>
                 ) : hasTransactions ? (
@@ -66,10 +66,9 @@ export default function TransactionHistoryPage() {
                         total={history.total}
                         page={history.page}
                         limit={history.limit}
-                        currentUserId={currentUser?.id}
-                        onPageChange={(newPage) =>
-                            setQueryParams({ ...queryParams, page: newPage })
-                        }
+                        userAccountIds={userAccountIds}
+                        selectedAccountId={query.accountId}
+                        onPageChange={changePage}
                     />
                 ) : (
                     <TransactionEmptyState />

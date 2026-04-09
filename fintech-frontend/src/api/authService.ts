@@ -1,5 +1,5 @@
 import axiosClient from "./axiosClient";
-import { initDPoPKeys, clearDPoPKeys } from "../utils/dpop";
+import { initDPoPKeys, clearDPoPKeys } from "../utils/dpopService";
 import type { UserProfile } from "../types/user";
 
 export interface LoginPayload {

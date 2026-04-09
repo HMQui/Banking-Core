@@ -87,7 +87,7 @@ export class NotificationsGateway
             const headers = client.request.headers as Record<string, unknown>;
             const proto = (headers['x-forwarded-proto'] as string) ?? 'http';
             const host = (headers.host as string) ?? '';
-            const requestUrl = client.request.url ?? '';
+            const requestUrl = client.request.url?.split('?')[0] ?? '';
             const originalUrl = `${proto}://${host}${requestUrl}`;
             const method = 'GET';
 
@@ -100,7 +100,16 @@ export class NotificationsGateway
                     token,
                 );
 
-            await client.join(String(userId));
+            const queryUserId = client.handshake.query.userId;
+
+            const isUserInPool = Array.isArray(queryUserId)
+                ? queryUserId[0]
+                : queryUserId;
+
+            // Check and join
+            if (isUserInPool) {
+                await client.join(userId);
+            }
 
             this.logger.log(
                 `Client ${client.id} authenticated and joined ${userId}`,

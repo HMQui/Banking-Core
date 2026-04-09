@@ -1,99 +1,149 @@
-import { FileText, ArrowRight, ExternalLink } from "lucide-react";
-
-interface Transaction {
-    id: string | number;
-    date: string;
-    desc: string;
-    amount: string;
-    status: string;
-}
+import { FileText, ArrowRight, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import type { Transaction } from "../../../../types/transaction";
+import type { RootState } from "../../../../store";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 interface RecentTransactionsProps {
     transactions?: Transaction[];
 }
 
 export default function RecentTransactions({ transactions = [] }: RecentTransactionsProps) {
+    const { user } = useSelector((state: RootState) => state.auth);
+    const navigate = useNavigate();
     const getStatusBadge = (status: string) => {
-        switch (status.toLowerCase()) {
-            case "success":
+        switch (status.toUpperCase()) {
+            case "SUCCESS":
                 return (
-                    <span className="px-2.5 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                    <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
                         Success
                     </span>
                 );
-            case "pending":
+            case "PENDING":
                 return (
-                    <span className="px-2.5 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+                    <span className="text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
                         Pending
+                    </span>
+                );
+            case "FAILED":
+                return (
+                    <span className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
+                        Failed
                     </span>
                 );
             default:
                 return (
-                    <span className="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-full text-xs font-medium">
+                    <span className="text-slate-600 bg-slate-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
                         {status}
                     </span>
                 );
         }
     };
 
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        }).format(date);
+    };
+
+    // Determine direction and UI details for each transaction
+    const getTransactionContext = (tx: Transaction) => {
+        const isOutgoing = user?.id === tx.sender?.userId || user?.id === tx.senderId;
+
+        if (isOutgoing) {
+            return {
+                title: tx.receiver?.accountName
+                    ? `To: ${tx.receiver.accountName}`
+                    : "Outgoing Transfer",
+                icon: <ArrowUpRight className="w-5 h-5 text-slate-600" />,
+                iconBg: "bg-slate-100",
+                amountColor: "text-slate-900",
+                sign: "-",
+            };
+        } else {
+            return {
+                title: tx.sender?.accountName
+                    ? `From: ${tx.sender.accountName}`
+                    : "Incoming Transfer",
+                icon: <ArrowDownLeft className="w-5 h-5 text-green-600" />,
+                iconBg: "bg-green-50",
+                amountColor: "text-green-600",
+                sign: "+",
+            };
+        }
+    };
+
     return (
-        <div className="md:col-span-3 bg-white rounded-xl p-6 border border-slate-200">
-            <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-4">
+        <div className="md:col-span-3 bg-white rounded-2xl p-6 md:p-8 border border-slate-100 shadow-sm">
+            <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-slate-900">Recent Transactions</h3>
-                <button className="text-sm font-medium text-blue-900 hover:text-blue-700 flex items-center gap-1">
-                    View Statement <ExternalLink className="w-4 h-4" />
+                <button className="text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-1" onClick={() => navigate('/statements')}>
+                    View All <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
 
             {transactions.length === 0 ? (
                 // Empty State
-                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                        <FileText className="w-8 h-8 text-slate-300" />
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-100">
+                        <FileText className="w-6 h-6 text-slate-400" />
                     </div>
-                    <h4 className="text-lg font-bold text-slate-900 mb-2">No transactions yet</h4>
-                    <p className="text-sm text-slate-500 max-w-sm mb-6 leading-relaxed">
-                        Your financial activity will appear here once you start using your account
-                        for transfers or payments.
+                    <h4 className="text-base font-bold text-slate-900 mb-1">No recent activity</h4>
+                    <p className="text-sm text-slate-500 max-w-xs mb-5">
+                        Your latest transfers and payments will show up here.
                     </p>
-                    <button className="text-sm font-semibold text-blue-900 flex items-center gap-1 hover:gap-2 transition-all">
-                        Make your first transfer <ArrowRight className="w-4 h-4" />
+                    <button className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+                        Make a transfer
                     </button>
                 </div>
             ) : (
-                // Table State
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="border-b border-slate-200 text-xs text-slate-500 uppercase tracking-wider">
-                                <th className="pb-3 pr-4 font-medium">Date</th>
-                                <th className="pb-3 pr-4 font-medium">Description</th>
-                                <th className="pb-3 pr-4 font-medium">Amount</th>
-                                <th className="pb-3 font-medium">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="text-sm">
-                            {transactions.map((tx) => (
-                                <tr
-                                    key={tx.id}
-                                    className="border-b border-slate-100 last:border-none"
-                                >
-                                    <td className="py-4 pr-4 text-slate-500 whitespace-nowrap">
-                                        {tx.date}
-                                    </td>
-                                    <td className="py-4 pr-4 text-slate-900 font-medium">
-                                        {tx.desc}
-                                    </td>
-                                    <td
-                                        className={`py-4 pr-4 font-semibold whitespace-nowrap ${tx.amount.startsWith("+") ? "text-green-600" : "text-slate-900"}`}
+                // List State
+                <div className="flex flex-col gap-4">
+                    {transactions.map((tx) => {
+                        const context = getTransactionContext(tx);
+
+                        return (
+                            <div
+                                key={tx.id}
+                                className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50/50 transition-colors group"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${context.iconBg}`}
                                     >
-                                        {tx.amount}
-                                    </td>
-                                    <td className="py-4">{getStatusBadge(tx.status)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                        {context.icon}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-slate-900 group-hover:text-blue-900 transition-colors">
+                                            {context.title}
+                                        </span>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="text-xs text-slate-500">
+                                                {formatDate(tx.createdAt)}
+                                            </span>
+                                            <span className="text-slate-300 text-[10px]">•</span>
+                                            <span className="text-xs text-slate-500 truncate max-w-30 sm:max-w-50">
+                                                {tx.description || "Transfer"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                    <span className={`text-sm font-bold ${context.amountColor}`}>
+                                        {context.sign}
+                                        {Number(tx.amount).toLocaleString()} {tx.currency}
+                                    </span>
+                                    {getStatusBadge(tx.status)}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>

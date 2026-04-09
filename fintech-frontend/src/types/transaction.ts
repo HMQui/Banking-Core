@@ -4,6 +4,13 @@ export type Currency = "USD" | "VND";
 
 export type EntryType = "DEBIT" | "CREDIT";
 
+export interface TransactionAccount {
+    id: string;
+    userId: string;
+    accountName: string;
+    accountNumber: string;
+}
+
 export interface Transaction {
     id: string;
     senderId?: string;
@@ -15,6 +22,8 @@ export interface Transaction {
     idempotencyKey: string;
     createdAt: string;
     updatedAt: string;
+    sender?: TransactionAccount;
+    receiver?: TransactionAccount;
 }
 
 export interface TransferPayload {
@@ -28,6 +37,11 @@ export interface TransferPayload {
 export interface GetHistoryQuery {
     page?: number;
     limit?: number;
+    accountId?: string;
+    startDate?: string; // ISO string (YYYY-MM-DD)
+    endDate?: string; // ISO string (YYYY-MM-DD)
+    type?: EntryType;
+    description?: string;
 }
 
 export interface PaginatedTransactions {

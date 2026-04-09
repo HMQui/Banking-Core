@@ -1,5 +1,5 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
-import { createDPoPProof } from "../utils/dpop";
+import { createDPoPProof } from "../utils/dpopService";
 import type { Store } from "@reduxjs/toolkit";
 import type { RootState, AppDispatch } from "../store/index";
 

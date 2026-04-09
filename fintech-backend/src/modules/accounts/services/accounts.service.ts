@@ -155,6 +155,24 @@ export class AccountsService {
     }
 
     /**
+     * Find account by account id using EntityManager
+     * Used in transaction processing to locate receiver account
+     */
+    async findAccountById(
+        accountId: string,
+        manager?: EntityManager,
+    ): Promise<Account | null> {
+        if (manager) {
+            return manager.findOne(Account, {
+                where: { id: accountId },
+            });
+        }
+        return this.accountRepository.findOne({
+            where: { id: accountId },
+        });
+    }
+
+    /**
      * Internal method for Transaction/Ledger module to update balance safely
      * Uses pessimistic write lock to prevent race conditions during concurrent transactions
      */

@@ -5,7 +5,8 @@ interface TransactionTableProps {
     total: number;
     page: number;
     limit: number;
-    currentUserId?: string;
+    userAccountIds: string[]; // FIX: Array of Account IDs owned by the user
+    selectedAccountId?: string; // If filtered by a specific account
     onPageChange: (page: number) => void;
 }
 
@@ -14,7 +15,8 @@ export default function TransactionTable({
     total,
     page,
     limit,
-    currentUserId,
+    userAccountIds,
+    selectedAccountId,
     onPageChange,
 }: TransactionTableProps) {
     const formatCurrency = (amount: number, currency: string, isCredit: boolean) => {
@@ -94,7 +96,16 @@ export default function TransactionTable({
                     <tbody className="divide-y divide-slate-100">
                         {transactions.map((tx) => {
                             const { date, time } = formatDate(tx.createdAt);
-                            const isCredit = tx.receiverId === currentUserId;
+
+                            // FIX: Correctly determine if it's money coming IN to the targeted account
+                            const isCredit = selectedAccountId
+                                ? tx.receiverId === selectedAccountId
+                                : userAccountIds.includes(tx.receiverId || "");
+
+                            // Find the counterparty name if the relations exist
+                            const counterparty = isCredit
+                                ? tx.sender?.accountName || "External Transfer"
+                                : tx.receiver?.accountName || "External Transfer";
 
                             return (
                                 <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
@@ -110,11 +121,14 @@ export default function TransactionTable({
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="text-sm font-medium text-slate-900 truncate max-wxs">
-                                            {tx.description || "Fund Transfer"}
+                                        <div className="text-sm font-medium text-slate-900 truncate max-w-xs">
+                                            {tx.description ||
+                                                (isCredit
+                                                    ? `From: ${counterparty}`
+                                                    : `To: ${counterparty}`)}
                                         </div>
                                         <div className="text-xs text-slate-400 mt-0.5">
-                                            {tx.currency} Transfer
+                                            {isCredit ? "Deposit" : "Withdrawal"}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -134,7 +148,7 @@ export default function TransactionTable({
                 </table>
             </div>
 
-            {/* Pagination */}
+            {/* Pagination Controls */}
             <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-white">
                 <span className="text-xs text-slate-500">
                     Showing{" "}

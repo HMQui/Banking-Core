@@ -1,3 +1,4 @@
+// transactions.service.ts
 import {
     Injectable,
     ConflictException,
@@ -13,6 +14,7 @@ import { AccountsService } from '../../accounts/services/accounts.service';
 import { GetHistoryRequestDto } from '../dto/get-history-request.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { QueryRunner } from 'typeorm/browser';
+import { User } from '../../users/entities/user.entity';
 
 @Injectable()
 export class TransactionsService {
@@ -65,11 +67,10 @@ export class TransactionsService {
 
         try {
             // verify specific sender account with lock
-            const senderAccount =
-                await this.accountsService.findAccountByUserId(
-                    senderAccountId,
-                    queryRunner.manager,
-                );
+            const senderAccount = await this.accountsService.findAccountById(
+                senderAccountId,
+                queryRunner.manager,
+            );
 
             if (!senderAccount) {
                 throw new NotFoundException('Sender account not found');
@@ -151,11 +152,15 @@ export class TransactionsService {
 
             await queryRunner.commitTransaction();
 
+            const senderUser = await queryRunner.manager.findOne(User, {
+                where: { id: userId },
+            });
+
             this.eventEmitter.emit('transaction.success', {
                 receiverId: receiverAccount.userId ?? receiverAccount.id,
                 amount: savedTransaction.amount,
                 currency: savedTransaction.currency,
-                senderName: String(senderAccount.userId ?? senderAccount.id),
+                senderName: String(senderUser?.fullName ?? senderAccount.id),
                 description: savedTransaction.description,
                 timestamp: new Date().toISOString(),
             });
@@ -194,7 +199,7 @@ export class TransactionsService {
     }
 
     /**
-     * Fetch paginated transaction history for a user (as sender or receiver).
+     * Fetch paginated history for the authenticated user
      */
     async getHistory(
         userId: string,
@@ -206,15 +211,30 @@ export class TransactionsService {
         page: number;
         limit: number;
     }> {
-        const { page = 1, limit = 10 } = query;
+        const {
+            page = 1,
+            limit = 10,
+            accountId,
+            startDate,
+            endDate,
+            type,
+            description,
+        } = query;
         const skip = (page - 1) * limit;
 
-        const userAccount = manager
-            ? await this.accountsService.findAccountByUserId(userId, manager)
-            : await this.accountsService.findAccountByUserId(userId);
+        const userAccounts = await this.accountsService.getAccounts(userId);
 
-        if (!userAccount) {
+        if (!userAccounts.length) {
             return { data: [], total: 0, page, limit };
+        }
+
+        let targetAccountIds = userAccounts.map((a) => a.id);
+
+        if (accountId) {
+            if (!targetAccountIds.includes(accountId)) {
+                return { data: [], total: 0, page, limit };
+            }
+            targetAccountIds = [accountId];
         }
 
         const repository = manager
@@ -224,14 +244,45 @@ export class TransactionsService {
         const queryBuilder = repository
             .createQueryBuilder('transaction')
             .leftJoinAndSelect('transaction.sender', 'sender')
-            .leftJoinAndSelect('transaction.receiver', 'receiver')
-            .where(
-                '(transaction.senderId = :accountId OR transaction.receiverId = :accountId)',
-                { accountId: userAccount.id },
-            )
-            .orderBy('transaction.createdAt', 'DESC')
-            .skip(skip)
-            .take(limit);
+            .leftJoinAndSelect('transaction.receiver', 'receiver');
+
+        if (type === EntryType.DEBIT) {
+            queryBuilder.andWhere('transaction.senderId IN (:...accountIds)', {
+                accountIds: targetAccountIds,
+            });
+        } else if (type === EntryType.CREDIT) {
+            queryBuilder.andWhere(
+                'transaction.receiverId IN (:...accountIds)',
+                { accountIds: targetAccountIds },
+            );
+        } else {
+            queryBuilder.andWhere(
+                '(transaction.senderId IN (:...accountIds) OR transaction.receiverId IN (:...accountIds))',
+                { accountIds: targetAccountIds },
+            );
+        }
+
+        if (startDate) {
+            queryBuilder.andWhere('transaction.createdAt >= :startDate', {
+                startDate,
+            });
+        }
+
+        if (endDate) {
+            queryBuilder.andWhere('transaction.createdAt <= :endDate', {
+                endDate,
+            });
+        }
+
+        if (description) {
+            queryBuilder.andWhere(
+                'LOWER(transaction.description) LIKE LOWER(:description)',
+                { description: `%${description}%` },
+            );
+        }
+
+        queryBuilder.orderBy('transaction.createdAt', 'DESC');
+        queryBuilder.skip(skip).take(limit);
 
         const [data, total] = await queryBuilder.getManyAndCount();
 

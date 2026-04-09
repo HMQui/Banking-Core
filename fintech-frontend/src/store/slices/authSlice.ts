@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { authService, type LoginPayload } from "../../api/authService";
 import { type UserProfile } from "../../types/user";
-import { clearDPoPKeys } from "../../utils/dpop";
+import { clearDPoPKeys } from "../../utils/dpopService";
 
 export interface AuthState {
     user: UserProfile | null;
